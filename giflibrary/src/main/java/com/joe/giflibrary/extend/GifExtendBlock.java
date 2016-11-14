@@ -1,5 +1,7 @@
 package com.joe.giflibrary.extend;
 
+import java.util.ArrayList;
+
 /**
  * Description Gif扩展块
  * Created by chenqiao on 2016/11/11.
@@ -15,7 +17,7 @@ public class GifExtendBlock {
     private byte type;
     private int size;
     private byte[] controlData;
-    private byte[] dataSubBlocks;
+    private ArrayList<byte[]> dataSubBlocks;
 
     public byte[] getControlData() {
         return controlData;
@@ -25,12 +27,16 @@ public class GifExtendBlock {
         this.controlData = controlData;
     }
 
-    public byte[] getDataSubBlocks() {
+    public ArrayList<byte[]> getDataSubBlocks() {
         return dataSubBlocks;
     }
 
-    public void setDataSubBlocks(byte[] dataSubBlocks) {
+    public void setDataSubBlocks(ArrayList<byte[]> dataSubBlocks) {
         this.dataSubBlocks = dataSubBlocks;
+    }
+
+    public void addDataSubBlock(byte[] dataSubBlock) {
+        dataSubBlocks.add(dataSubBlock);
     }
 
     public byte getType() {
@@ -47,5 +53,9 @@ public class GifExtendBlock {
 
     public void setSize(int size) {
         this.size = size;
+    }
+
+    public GifExtendBlock() {
+        dataSubBlocks = new ArrayList<>();
     }
 }

@@ -17,8 +17,8 @@ public class GifFactory {
             GifDecoder.setGifParams(drawable, GifDecoder.readGifParamsBlock(gifIn));
             if (drawable.isGlobalColorTableFlag()) {
                 GifDecoder.setGlobalColorTable(drawable, gifIn);
-                byte temp = GifDecoder.readDataStream(drawable, gifIn);
             }
+            GifDecoder.readDataStream(drawable, gifIn);
         }
         gifIn.close();
         return drawable;

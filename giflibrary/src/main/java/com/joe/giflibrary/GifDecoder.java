@@ -1,5 +1,7 @@
 package com.joe.giflibrary;
 
+import android.graphics.Color;
+
 import com.joe.giflibrary.extend.GifAnnotationExtendBlock;
 import com.joe.giflibrary.extend.GifAppExtendBlock;
 import com.joe.giflibrary.extend.GifExtendBlock;
@@ -53,21 +55,19 @@ class GifDecoder {
     }
 
     static void setGlobalColorTable(GifDrawable drawable, InputStream gifIn) throws IOException {
-        int index = (int) Math.pow(2, 1 + (drawable.getPixel() & 0xff));
-        byte[] r = new byte[index];
-        byte[] g = new byte[index];
-        byte[] b = new byte[index];
+        int index = 1 << (1 + (drawable.getPixel() & 0xff));
+        byte r, g, b;
+        int[] colorTable = new int[index];
         for (int i = 0; i < index; i++) {
-            r[i] = (byte) gifIn.read();
-            g[i] = (byte) gifIn.read();
-            b[i] = (byte) gifIn.read();
+            r = (byte) gifIn.read();
+            g = (byte) gifIn.read();
+            b = (byte) gifIn.read();
+            colorTable[i] = Color.rgb(r, g, b);
         }
-        drawable.setColor_table_r(r);
-        drawable.setColor_table_g(g);
-        drawable.setColor_table_b(b);
+        drawable.setColor_table(colorTable);
     }
 
-    static byte readDataStream(GifDrawable drawable, InputStream gifIn) throws IOException {
+    static void readDataStream(GifDrawable drawable, InputStream gifIn) throws IOException {
         byte head;
         while ((head = (byte) gifIn.read()) >= 0) {
             switch (head) {
@@ -77,9 +77,10 @@ class GifDecoder {
                 case GifImageBlock.FLAG_IMAGE_BLOCK:
                     addImageBlock(drawable, gifIn);
                     break;
+                case GifDrawable.FLAG_FILE_END:
+                    return;
             }
         }
-        return head;
     }
 
     private static void addImageBlock(GifDrawable drawable, InputStream gifIn) throws IOException {
@@ -89,19 +90,32 @@ class GifDecoder {
         gifIn.read(imageDescriptor, 1, 9);
         block.setData(imageDescriptor);
         if (block.isLocalColorTableFlag()) {
-            int index = (int) Math.pow(2, 1 + (block.getLocalPixel() & 0xff));
-            byte[] r = new byte[index];
-            byte[] g = new byte[index];
-            byte[] b = new byte[index];
+            int index = 1 << (1 + (block.getLocalPixel() & 0xff));
+            byte r, g, b;
+            int[] colorTable = new int[index];
             for (int i = 0; i < index; i++) {
-                r[i] = (byte) gifIn.read();
-                g[i] = (byte) gifIn.read();
-                b[i] = (byte) gifIn.read();
+                r = (byte) gifIn.read();
+                g = (byte) gifIn.read();
+                b = (byte) gifIn.read();
+                colorTable[i] = Color.rgb(r, g, b);
             }
-            block.setColor_table_r(r);
-            block.setColor_table_g(g);
-            block.setColor_table_b(b);
+            block.setColor_table(colorTable);
+        } else {
+            //如果不存在局部颜色表，则使用全局颜色表
+            block.setColor_table(drawable.getColor_table());
         }
+        readImageData(block, gifIn);
+        drawable.addImageBlock(block);
+    }
+
+    private static void readImageData(GifImageBlock block, InputStream gifIn) throws IOException {
+        int lzwSize = gifIn.read();
+        block.setLZWSize((byte) lzwSize);
+        byte[] imageDataBlock;
+        do {
+            imageDataBlock = readDataBlock(gifIn);
+            block.addImageData(imageDataBlock);
+        } while (imageDataBlock.length > 1);
     }
 
     private static void addExtendBlocks(GifDrawable drawable, InputStream gifIn) throws IOException {
@@ -131,40 +145,50 @@ class GifDecoder {
     }
 
     private static void readTextExtendBlock(GifTextExtendBlock extendBlock, InputStream gifIn) throws IOException {
-        byte size = (byte) gifIn.read();
-        extendBlock.setSize(size - 1);//固定值13(包含size)
+        int size = gifIn.read();
+        extendBlock.setSize(size);//固定值12
         byte[] controlData = new byte[size];
         gifIn.read(controlData);
-        byte[] dataSubBlocks = readDataBlock(gifIn);
         extendBlock.setControlData(controlData);
-        extendBlock.setDataSubBlocks(dataSubBlocks);
+        byte[] dataSubBlock;
+        do {
+            dataSubBlock = readDataBlock(gifIn);
+            extendBlock.addDataSubBlock(dataSubBlock);
+        } while (dataSubBlock.length > 1);
     }
 
     private static void readGraphicControlExtendBlock(GifGraphicControlExtendBlock extendBlock, InputStream gifIn) throws IOException {
-        byte size = (byte) gifIn.read();
-        extendBlock.setSize(size - 1);//固定值4
-        byte[] controlData = new byte[size - 1];
+        int size = gifIn.read();
+        extendBlock.setSize(size);//固定值4
+        byte[] controlData = new byte[size];
         gifIn.read(controlData);
-        byte[] dataSubBlocks = readDataBlock(gifIn);
         extendBlock.setControlData(controlData);
-        extendBlock.setDataSubBlocks(dataSubBlocks);
+        byte[] dataSubBlock;
+        do {
+            dataSubBlock = readDataBlock(gifIn);
+            extendBlock.addDataSubBlock(dataSubBlock);
+        } while (dataSubBlock.length > 1);
     }
 
     private static void readAppExtendBlock(GifAppExtendBlock extendBlock, InputStream gifIn) throws IOException {
-        byte size = (byte) gifIn.read();
-        extendBlock.setSize(size - 1);//固定值12
-        byte[] controlData = new byte[size - 1];
+        int size = gifIn.read();
+        extendBlock.setSize(size);//固定值11
+        byte[] controlData = new byte[size];
         gifIn.read(controlData);
-        byte[] dataSubBlocks = readDataBlock(gifIn);
         extendBlock.setControlData(controlData);
-        extendBlock.setDataSubBlocks(dataSubBlocks);
+        byte[] dataSubBlock;
+        do {
+            dataSubBlock = readDataBlock(gifIn);
+            extendBlock.addDataSubBlock(dataSubBlock);
+        } while (dataSubBlock.length > 1);
     }
 
     private static void readAnnotationExtendBlock(GifAnnotationExtendBlock extendBlock, InputStream gifIn) throws IOException {
-        byte[] dataSubBlocks;
+        byte[] dataSubBlock;
         do {
-            dataSubBlocks = readDataBlock(gifIn);
-        } while (dataSubBlocks.length > 1);
+            dataSubBlock = readDataBlock(gifIn);
+            extendBlock.addDataSubBlock(dataSubBlock);
+        } while (dataSubBlock.length > 1);
     }
 
     static byte[] readGifParamsBlock(InputStream in) throws IOException {
@@ -180,9 +204,9 @@ class GifDecoder {
     }
 
     public static byte[] readDataBlock(InputStream in) throws IOException {
-        byte blockHeader = (byte) in.read();
+        int blockHeader = in.read();
         byte[] block = new byte[blockHeader + 1];
-        block[0] = blockHeader;
+        block[0] = (byte) blockHeader;
         if (in.read(block, 1, blockHeader) < 0) {
             throw new IOException("the data has been read is not enough.");
         }

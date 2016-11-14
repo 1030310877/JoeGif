@@ -6,6 +6,7 @@ package com.joe.giflibrary.extend;
  */
 public class GifTextExtendBlock extends GifExtendBlock {
     public GifTextExtendBlock() {
+        super();
         setType(GifExtendBlock.LABEL_TEXT_EXTEND_BLOCK);
     }
 }

@@ -20,6 +20,7 @@ public class GifDrawable extends Drawable {
 
     public static final String VERSION_87 = "87a";
     public static final String VERSION_89 = "89a";
+    public static final byte FLAG_FILE_END = 0x3B;
 
     private String version;
     private int logicalWidth;
@@ -30,12 +31,18 @@ public class GifDrawable extends Drawable {
     private byte pixel;
     private byte backgroundColorIndex;
     private byte pixelAspectRadio;
-    private byte[] color_table_r;
-    private byte[] color_table_g;
-    private byte[] color_table_b;
+    private int[] color_table;
     private byte[] extendBlockBytes;
     private List<GifExtendBlock> extendBlocks = new ArrayList<>();
     private List<GifImageBlock> imageBlocks = new ArrayList<>();
+
+    public int[] getColor_table() {
+        return color_table;
+    }
+
+    public void setColor_table(int[] color_table) {
+        this.color_table = color_table;
+    }
 
     public void addImageBlock(GifImageBlock block) {
         imageBlocks.add(block);
@@ -67,30 +74,6 @@ public class GifDrawable extends Drawable {
 
     public void setExtendBlocks(List<GifExtendBlock> extendBlocks) {
         this.extendBlocks = extendBlocks;
-    }
-
-    public byte[] getColor_table_r() {
-        return color_table_r;
-    }
-
-    public void setColor_table_r(byte[] color_table_r) {
-        this.color_table_r = color_table_r;
-    }
-
-    public byte[] getColor_table_g() {
-        return color_table_g;
-    }
-
-    public void setColor_table_g(byte[] color_table_g) {
-        this.color_table_g = color_table_g;
-    }
-
-    public byte[] getColor_table_b() {
-        return color_table_b;
-    }
-
-    public void setColor_table_b(byte[] color_table_b) {
-        this.color_table_b = color_table_b;
     }
 
     public byte getPixelAspectRadio() {

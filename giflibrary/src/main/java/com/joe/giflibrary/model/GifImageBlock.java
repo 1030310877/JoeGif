@@ -1,5 +1,7 @@
 package com.joe.giflibrary.model;
 
+import java.util.ArrayList;
+
 /**
  * Description
  * Created by chenqiao on 2016/11/11.
@@ -17,36 +19,33 @@ public class GifImageBlock {
     private boolean interlaceFlag;
     private boolean localSortFlag;
     private int localPixel;
-    private byte[] color_table_r;
-    private byte[] color_table_g;
-    private byte[] color_table_b;
+    private int[] color_table;
+    private byte LZWSize;
+    private ArrayList<byte[]> imageEncodeData;
 
     public GifImageBlock() {
         header = FLAG_IMAGE_BLOCK;
+        imageEncodeData = new ArrayList<>();
     }
 
-    public byte[] getColor_table_r() {
-        return color_table_r;
+    public int[] getColor_table() {
+        return color_table;
     }
 
-    public void setColor_table_r(byte[] color_table_r) {
-        this.color_table_r = color_table_r;
+    public void setColor_table(int[] color_table) {
+        this.color_table = color_table;
     }
 
-    public byte[] getColor_table_g() {
-        return color_table_g;
+    public ArrayList<byte[]> getImageEncodeData() {
+        return imageEncodeData;
     }
 
-    public void setColor_table_g(byte[] color_table_g) {
-        this.color_table_g = color_table_g;
+    public void setImageEncodeData(ArrayList<byte[]> imageEncodeData) {
+        this.imageEncodeData = imageEncodeData;
     }
 
-    public byte[] getColor_table_b() {
-        return color_table_b;
-    }
-
-    public void setColor_table_b(byte[] color_table_b) {
-        this.color_table_b = color_table_b;
+    public void addImageData(byte[] imageDataBlock) {
+        imageEncodeData.add(imageDataBlock);
     }
 
     public byte[] getData() {
@@ -134,5 +133,13 @@ public class GifImageBlock {
 
     public void setLocalPixel(int localPixel) {
         this.localPixel = localPixel;
+    }
+
+    public void setLZWSize(byte LZWSize) {
+        this.LZWSize = LZWSize;
+    }
+
+    public byte getLZWSize() {
+        return LZWSize;
     }
 }
