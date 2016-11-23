@@ -1,6 +1,7 @@
 package com.joe.giflibrary;
 
 import android.graphics.Color;
+import android.util.Log;
 
 import com.joe.giflibrary.extend.GifAnnotationExtendBlock;
 import com.joe.giflibrary.extend.GifAppExtendBlock;
@@ -12,6 +13,7 @@ import com.joe.giflibrary.model.GifImageBlock;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Locale;
 
 /**
@@ -73,13 +75,30 @@ class GifDecoder {
             switch (head) {
                 case GifExtendBlock.FLAG_EXTEND_BLOCK:
                     addExtendBlocks(drawable, gifIn);
+                    Log.d("GifDecoder", "readDataStream: Extend Block");
                     break;
                 case GifImageBlock.FLAG_IMAGE_BLOCK:
                     addImageBlock(drawable, gifIn);
+                    decodeImageBlock(drawable);
+                    Log.d("GifDecoder", "readDataStream: Image Block");
                     break;
                 case GifDrawable.FLAG_FILE_END:
+                    Log.d("GifDecoder", "readDataStream: File End");
                     return;
+                default:
+                    Log.d("GifDecoder", "readDataStream: unknown");
+                    break;
             }
+        }
+    }
+
+    private static void decodeImageBlock(GifDrawable drawable) {
+        GifImageBlock imageBlock = drawable.getImageBlocks().get(drawable.getImageBlocks().size() - 1);
+        ArrayList<Integer> decodedData = LZWDecoder.decode(imageBlock);
+        if (imageBlock.isInterlaceFlag()) {
+
+        } else {
+            drawable.addImageDecodeData(decodedData);
         }
     }
 
@@ -111,11 +130,14 @@ class GifDecoder {
     private static void readImageData(GifImageBlock block, InputStream gifIn) throws IOException {
         int lzwSize = gifIn.read();
         block.setLZWSize((byte) lzwSize);
+        Log.d("GifDecoder", "readImageData LZW Size: " + lzwSize);
         byte[] imageDataBlock;
         do {
             imageDataBlock = readDataBlock(gifIn);
-            block.addImageData(imageDataBlock);
-        } while (imageDataBlock.length > 1);
+            if (imageDataBlock.length > 0) {
+                block.addImageEncodeData(imageDataBlock);
+            }
+        } while (imageDataBlock.length > 0);
     }
 
     private static void addExtendBlocks(GifDrawable drawable, InputStream gifIn) throws IOException {
@@ -153,8 +175,10 @@ class GifDecoder {
         byte[] dataSubBlock;
         do {
             dataSubBlock = readDataBlock(gifIn);
-            extendBlock.addDataSubBlock(dataSubBlock);
-        } while (dataSubBlock.length > 1);
+            if (dataSubBlock.length > 0) {
+                extendBlock.addDataSubBlock(dataSubBlock);
+            }
+        } while (dataSubBlock.length > 0);
     }
 
     private static void readGraphicControlExtendBlock(GifGraphicControlExtendBlock extendBlock, InputStream gifIn) throws IOException {
@@ -166,8 +190,10 @@ class GifDecoder {
         byte[] dataSubBlock;
         do {
             dataSubBlock = readDataBlock(gifIn);
-            extendBlock.addDataSubBlock(dataSubBlock);
-        } while (dataSubBlock.length > 1);
+            if (dataSubBlock.length > 0) {
+                extendBlock.addDataSubBlock(dataSubBlock);
+            }
+        } while (dataSubBlock.length > 0);
     }
 
     private static void readAppExtendBlock(GifAppExtendBlock extendBlock, InputStream gifIn) throws IOException {
@@ -179,16 +205,20 @@ class GifDecoder {
         byte[] dataSubBlock;
         do {
             dataSubBlock = readDataBlock(gifIn);
-            extendBlock.addDataSubBlock(dataSubBlock);
-        } while (dataSubBlock.length > 1);
+            if (dataSubBlock.length > 0) {
+                extendBlock.addDataSubBlock(dataSubBlock);
+            }
+        } while (dataSubBlock.length > 0);
     }
 
     private static void readAnnotationExtendBlock(GifAnnotationExtendBlock extendBlock, InputStream gifIn) throws IOException {
         byte[] dataSubBlock;
         do {
             dataSubBlock = readDataBlock(gifIn);
-            extendBlock.addDataSubBlock(dataSubBlock);
-        } while (dataSubBlock.length > 1);
+            if (dataSubBlock.length > 0) {
+                extendBlock.addDataSubBlock(dataSubBlock);
+            }
+        } while (dataSubBlock.length > 0);
     }
 
     static byte[] readGifParamsBlock(InputStream in) throws IOException {
@@ -205,9 +235,8 @@ class GifDecoder {
 
     public static byte[] readDataBlock(InputStream in) throws IOException {
         int blockHeader = in.read();
-        byte[] block = new byte[blockHeader + 1];
-        block[0] = (byte) blockHeader;
-        if (in.read(block, 1, blockHeader) < 0) {
+        byte[] block = new byte[blockHeader];
+        if (blockHeader > 0 && in.read(block, 0, blockHeader) < 0) {
             throw new IOException("the data has been read is not enough.");
         }
         return block;

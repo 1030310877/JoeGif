@@ -44,7 +44,7 @@ public class GifImageBlock {
         this.imageEncodeData = imageEncodeData;
     }
 
-    public void addImageData(byte[] imageDataBlock) {
+    public void addImageEncodeData(byte[] imageDataBlock) {
         imageEncodeData.add(imageDataBlock);
     }
 

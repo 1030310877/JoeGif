@@ -9,7 +9,7 @@ import org.junit.runner.RunWith;
 
 import java.io.InputStream;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Instrumentation test, which will execute on an Android device.

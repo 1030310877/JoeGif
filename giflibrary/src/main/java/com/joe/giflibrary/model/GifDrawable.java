@@ -35,6 +35,7 @@ public class GifDrawable extends Drawable {
     private byte[] extendBlockBytes;
     private List<GifExtendBlock> extendBlocks = new ArrayList<>();
     private List<GifImageBlock> imageBlocks = new ArrayList<>();
+    private ArrayList<ArrayList<Integer>> pic_list = new ArrayList<>();
 
     public int[] getColor_table() {
         return color_table;
@@ -166,5 +167,9 @@ public class GifDrawable extends Drawable {
     @Override
     public int getOpacity() {
         return PixelFormat.OPAQUE;
+    }
+
+    public void addImageDecodeData(ArrayList<Integer> decode) {
+        pic_list.add(decode);
     }
 }
