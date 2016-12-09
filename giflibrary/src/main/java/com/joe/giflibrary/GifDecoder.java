@@ -58,12 +58,12 @@ class GifDecoder {
 
     static void setGlobalColorTable(GifDrawable drawable, InputStream gifIn) throws IOException {
         int index = 1 << (1 + (drawable.getPixel() & 0xff));
-        byte r, g, b;
+        int r, g, b;
         int[] colorTable = new int[index];
         for (int i = 0; i < index; i++) {
-            r = (byte) gifIn.read();
-            g = (byte) gifIn.read();
-            b = (byte) gifIn.read();
+            r = ((byte) gifIn.read()) & 0xff;
+            g = ((byte) gifIn.read()) & 0xff;
+            b = ((byte) gifIn.read()) & 0xff;
             colorTable[i] = Color.rgb(r, g, b);
         }
         drawable.setColor_table(colorTable);
@@ -78,8 +78,8 @@ class GifDecoder {
                     Log.d("GifDecoder", "readDataStream: Extend Block");
                     break;
                 case GifImageBlock.FLAG_IMAGE_BLOCK:
-                    addImageBlock(drawable, gifIn);
-                    decodeImageBlock(drawable);
+                    GifImageBlock block = addImageBlock(drawable, gifIn);
+                    decodeImageBlock(drawable, block);
                     Log.d("GifDecoder", "readDataStream: Image Block");
                     break;
                 case GifDrawable.FLAG_FILE_END:
@@ -92,17 +92,51 @@ class GifDecoder {
         }
     }
 
-    private static void decodeImageBlock(GifDrawable drawable) {
-        GifImageBlock imageBlock = drawable.getImageBlocks().get(drawable.getImageBlocks().size() - 1);
+    private static void decodeImageBlock(GifDrawable drawable, GifImageBlock imageBlock) {
         ArrayList<Integer> decodedData = LZWDecoder.decode(imageBlock);
+        int width = drawable.getLogicalWidth();
+        int height = drawable.getLogicalHeight();
+        int[] imageOriginalData = new int[width * height];
         if (imageBlock.isInterlaceFlag()) {
+            int line1 = height % 8 == 0 ? height / 8 : (int) Math.ceil(height / 8f);
+            int temp = height - 4;
+            int line2 = temp <= 0 ? 0 : (temp % 8 == 0 ? temp / 8 : (int) Math.ceil(temp / 8f));
+            temp = height - 2;
+            int line3 = temp <= 0 ? 0 : (temp % 4 == 0 ? temp / 4 : (int) Math.ceil(temp / 4f));
+            temp = height - 1;
+            int line4 = temp <= 0 ? 0 : (temp % 2 == 0 ? temp / 2 : (int) Math.ceil(temp / 2f));
 
+            int pos = 0;
+            for (int i = 0; i < line1; i++) {
+                for (int j = 0; j < width; j++) {
+                    imageOriginalData[pos++] = decodedData.get(i * 8 * width + j);
+                }
+            }
+            for (int i = 0; i < line2; i++) {
+                for (int j = 0; j < width; j++) {
+                    imageOriginalData[pos++] = decodedData.get(i * 8 * width + 4 * width + j);
+                }
+            }
+            for (int i = 0; i < line3; i++) {
+                for (int j = 0; j < width; j++) {
+                    imageOriginalData[pos++] = decodedData.get(i * 4 * width + 2 * width + j);
+                }
+            }
+            for (int i = 0; i < line4; i++) {
+                for (int j = 0; j < width; j++) {
+                    imageOriginalData[pos++] = decodedData.get(i * 2 * width + width + j);
+                }
+            }
         } else {
-            drawable.addImageDecodeData(decodedData);
+            for (int i = 0; i < decodedData.size(); i++) {
+                imageOriginalData[i] = decodedData.get(i);
+            }
         }
+        decodedData.clear();
+        drawable.addImageDecodeData(imageOriginalData);
     }
 
-    private static void addImageBlock(GifDrawable drawable, InputStream gifIn) throws IOException {
+    private static GifImageBlock addImageBlock(GifDrawable drawable, InputStream gifIn) throws IOException {
         GifImageBlock block = new GifImageBlock();
         byte[] imageDescriptor = new byte[10];
         imageDescriptor[0] = GifImageBlock.FLAG_IMAGE_BLOCK;
@@ -110,12 +144,12 @@ class GifDecoder {
         block.setData(imageDescriptor);
         if (block.isLocalColorTableFlag()) {
             int index = 1 << (1 + (block.getLocalPixel() & 0xff));
-            byte r, g, b;
+            int r, g, b;
             int[] colorTable = new int[index];
             for (int i = 0; i < index; i++) {
-                r = (byte) gifIn.read();
-                g = (byte) gifIn.read();
-                b = (byte) gifIn.read();
+                r = ((byte) gifIn.read()) & 0xff;
+                g = ((byte) gifIn.read()) & 0xff;
+                b = ((byte) gifIn.read()) & 0xff;
                 colorTable[i] = Color.rgb(r, g, b);
             }
             block.setColor_table(colorTable);
@@ -124,7 +158,7 @@ class GifDecoder {
             block.setColor_table(drawable.getColor_table());
         }
         readImageData(block, gifIn);
-        drawable.addImageBlock(block);
+        return block;
     }
 
     private static void readImageData(GifImageBlock block, InputStream gifIn) throws IOException {

@@ -1,5 +1,7 @@
 package com.joe.giflibrary;
 
+import android.util.Log;
+
 import com.joe.giflibrary.model.GifImageBlock;
 
 import java.util.ArrayList;
@@ -15,8 +17,8 @@ public class LZWDecoder {
         ArrayList<byte[]> imageEncodeData = block.getImageEncodeData();
         int lzwCodeSize = block.getLZWSize();
         int rootTableSize = 1 << lzwCodeSize;
-        int CC = 1 << lzwCodeSize;
         int dataBits = lzwCodeSize + 1;
+        int CC = 1 << lzwCodeSize;
         int EOI = CC + 1;
 
         BitInputStream bitInputStream = new BitInputStream(imageEncodeData);
@@ -24,6 +26,7 @@ public class LZWDecoder {
         int oldCode = -1, code;
         ArrayList<Word> result = new ArrayList<>();
         while ((code = bitInputStream.readBits(dataBits)) != -1) {
+            Log.d("LZWDecoder", "decode: " + oldCode + " " + code);
             if (code == EOI) {
                 break;
             }

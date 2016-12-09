@@ -1,12 +1,16 @@
 package com.joe.giflibrary.model;
 
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
+import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.drawable.Drawable;
+import android.util.Log;
 
 import com.joe.giflibrary.extend.GifExtendBlock;
 
+import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,6 +26,8 @@ public class GifDrawable extends Drawable {
     public static final String VERSION_89 = "89a";
     public static final byte FLAG_FILE_END = 0x3B;
 
+    private Paint mPaint;
+
     private String version;
     private int logicalWidth;
     private int logicalHeight;
@@ -34,8 +40,12 @@ public class GifDrawable extends Drawable {
     private int[] color_table;
     private byte[] extendBlockBytes;
     private List<GifExtendBlock> extendBlocks = new ArrayList<>();
-    private List<GifImageBlock> imageBlocks = new ArrayList<>();
-    private ArrayList<ArrayList<Integer>> pic_list = new ArrayList<>();
+    private ArrayList<int[]> pic_list = new ArrayList<>();
+
+    public GifDrawable() {
+        mPaint = new Paint();
+        mPaint.setAntiAlias(true);
+    }
 
     public int[] getColor_table() {
         return color_table;
@@ -43,18 +53,6 @@ public class GifDrawable extends Drawable {
 
     public void setColor_table(int[] color_table) {
         this.color_table = color_table;
-    }
-
-    public void addImageBlock(GifImageBlock block) {
-        imageBlocks.add(block);
-    }
-
-    public List<GifImageBlock> getImageBlocks() {
-        return imageBlocks;
-    }
-
-    public void setImageBlocks(List<GifImageBlock> imageBlocks) {
-        this.imageBlocks = imageBlocks;
     }
 
     public byte[] getExtendBlockBytes() {
@@ -149,27 +147,45 @@ public class GifDrawable extends Drawable {
         this.version = version;
     }
 
-    @Override
-    public void draw(Canvas canvas) {
-
+    public void addImageDecodeData(int[] decode) {
+        pic_list.add(decode);
     }
 
     @Override
-    public void setAlpha(int i) {
+    public void draw(Canvas canvas) {
+        //TODO
+        if (pic_list.size() > 0) {
+            Log.d("GifDrawable", "draw: 1");
+            Bitmap bitmap = Bitmap.createBitmap(logicalWidth, logicalHeight, Bitmap.Config.ARGB_8888);
+            Log.d("GifDrawable", "draw: 2");
+            bitmap.copyPixelsFromBuffer(IntBuffer.wrap(pic_list.get(0)));
+            Log.d("GifDrawable", "draw: 3");
+            canvas.drawBitmap(bitmap, 0, 0, mPaint);
+        }
+    }
 
+    @Override
+    public void setAlpha(int alpha) {
+        mPaint.setAlpha(alpha);
     }
 
     @Override
     public void setColorFilter(ColorFilter colorFilter) {
-
+        mPaint.setColorFilter(colorFilter);
     }
 
     @Override
     public int getOpacity() {
-        return PixelFormat.OPAQUE;
+        return PixelFormat.TRANSLUCENT;
     }
 
-    public void addImageDecodeData(ArrayList<Integer> decode) {
-        pic_list.add(decode);
+    @Override
+    public int getIntrinsicWidth() {
+        return getLogicalWidth();
+    }
+
+    @Override
+    public int getIntrinsicHeight() {
+        return getLogicalHeight();
     }
 }
