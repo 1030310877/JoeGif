@@ -1,7 +1,5 @@
 package com.joe.giflibrary;
 
-import android.util.Log;
-
 import com.joe.giflibrary.model.GifImageBlock;
 
 import java.util.ArrayList;
@@ -26,7 +24,6 @@ public class LZWDecoder {
         int oldCode = -1, code;
         ArrayList<Word> result = new ArrayList<>();
         while ((code = bitInputStream.readBits(dataBits)) != -1) {
-            Log.d("LZWDecoder", "decode: " + oldCode + " " + code);
             if (code == EOI) {
                 break;
             }
@@ -52,6 +49,7 @@ public class LZWDecoder {
                 newWord.codes.addAll(oldWord.codes);
                 newWord.codes.add(oldWord.codes.get(0));
                 dictionary.addWord(newWord);
+                result.add(newWord);
             }
             oldCode = code;
             if (dictionary.size() >= (1 << dataBits)) {
@@ -63,7 +61,6 @@ public class LZWDecoder {
             }
         }
 
-        //从颜色表中读取颜色
         ArrayList<Integer> decodeData = new ArrayList<>();
         for (Word word : result) {
             for (Short aShort : word.codes) {

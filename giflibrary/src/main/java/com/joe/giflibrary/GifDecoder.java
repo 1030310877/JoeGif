@@ -10,6 +10,7 @@ import com.joe.giflibrary.extend.GifGraphicControlExtendBlock;
 import com.joe.giflibrary.extend.GifTextExtendBlock;
 import com.joe.giflibrary.model.GifDrawable;
 import com.joe.giflibrary.model.GifImageBlock;
+import com.joe.giflibrary.model.GifImagePixelModel;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -43,8 +44,9 @@ class GifDecoder {
 
     static void setGifParams(GifDrawable drawable, byte[] screenDescriptor) {
         if (screenDescriptor.length == GifDrawable.LOGICAL_SCREEN_DESCRIPTOR_LENGTH) {
-            int width = ((screenDescriptor[1] & 0xff) << 8 | screenDescriptor[0]);
-            int height = ((screenDescriptor[3] & 0xff) << 8 | screenDescriptor[2]);
+            int width = ((screenDescriptor[1] & 0xff) << 8 | (screenDescriptor[0] & 0xff));
+            int height = ((screenDescriptor[3] & 0xff) << 8 | (screenDescriptor[2] & 0xff));
+            Log.d("GifDecoder", "width=" + width + "  height=" + height);
             drawable.setLogicalWidth(width);
             drawable.setLogicalHeight(height);
             drawable.setGlobalColorTableFlag((screenDescriptor[4] & 0b1000_0000) != 0);
@@ -75,12 +77,11 @@ class GifDecoder {
             switch (head) {
                 case GifExtendBlock.FLAG_EXTEND_BLOCK:
                     addExtendBlocks(drawable, gifIn);
-                    Log.d("GifDecoder", "readDataStream: Extend Block");
                     break;
                 case GifImageBlock.FLAG_IMAGE_BLOCK:
+                    Log.d("GifDecoder", "readDataStream: Image Block");
                     GifImageBlock block = addImageBlock(drawable, gifIn);
                     decodeImageBlock(drawable, block);
-                    Log.d("GifDecoder", "readDataStream: Image Block");
                     break;
                 case GifDrawable.FLAG_FILE_END:
                     Log.d("GifDecoder", "readDataStream: File End");
@@ -98,6 +99,7 @@ class GifDecoder {
         int height = drawable.getLogicalHeight();
         int[] imageOriginalData = new int[width * height];
         if (imageBlock.isInterlaceFlag()) {
+            Log.d("GifDecoder", "decodeImageBlock: isInterlace");
             int line1 = height % 8 == 0 ? height / 8 : (int) Math.ceil(height / 8f);
             int temp = height - 4;
             int line2 = temp <= 0 ? 0 : (temp % 8 == 0 ? temp / 8 : (int) Math.ceil(temp / 8f));
@@ -128,12 +130,13 @@ class GifDecoder {
                 }
             }
         } else {
+            Log.d("GifDecoder", "decodeImageBlock: not isInterlace");
             for (int i = 0; i < decodedData.size(); i++) {
                 imageOriginalData[i] = decodedData.get(i);
             }
         }
         decodedData.clear();
-        drawable.addImageDecodeData(imageOriginalData);
+        drawable.addImageDecodeData(imageBlock, imageOriginalData);
     }
 
     private static GifImageBlock addImageBlock(GifDrawable drawable, InputStream gifIn) throws IOException {
@@ -179,24 +182,38 @@ class GifDecoder {
         GifExtendBlock extendBlock = null;
         switch (type) {
             case GifExtendBlock.LABEL_ANNOTATION_EXTEND_BLOCK:
+                Log.d("GifDecoder", "readDataStream: Annotation Extend Block");
                 extendBlock = new GifAnnotationExtendBlock();
                 readAnnotationExtendBlock((GifAnnotationExtendBlock) extendBlock, gifIn);
                 break;
             case GifExtendBlock.LABEL_APP_EXTEND_BLOCK:
+                Log.d("GifDecoder", "readDataStream: Application Extend Block");
                 extendBlock = new GifAppExtendBlock();
                 readAppExtendBlock((GifAppExtendBlock) extendBlock, gifIn);
                 break;
             case GifExtendBlock.LABEL_GRAPHIC_CONTROL_EXTEND_BLOCK:
+                Log.d("GifDecoder", "readDataStream: Graphic Control Extend Block");
                 extendBlock = new GifGraphicControlExtendBlock();
                 readGraphicControlExtendBlock((GifGraphicControlExtendBlock) extendBlock, gifIn);
                 break;
             case GifExtendBlock.LABEL_TEXT_EXTEND_BLOCK:
+                Log.d("GifDecoder", "readDataStream: Text Extend Block");
                 extendBlock = new GifTextExtendBlock();
                 readTextExtendBlock((GifTextExtendBlock) extendBlock, gifIn);
                 break;
         }
         if (extendBlock != null) {
             drawable.addExtendBlock(extendBlock);
+            if (extendBlock instanceof GifGraphicControlExtendBlock) {
+                short time = 100;
+                if (((GifGraphicControlExtendBlock) extendBlock).getDelayTime() != 0) {
+                    time = ((GifGraphicControlExtendBlock) extendBlock).getDelayTime();
+                }
+                ArrayList<GifImagePixelModel> list = drawable.getImageDecodeData();
+                if (list != null && list.size() > 0) {
+                    list.get(list.size() - 1).setDelayTime(time);
+                }
+            }
         }
     }
 

@@ -6,11 +6,11 @@ import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.drawable.Drawable;
-import android.util.Log;
+import android.os.Handler;
+import android.os.Looper;
 
 import com.joe.giflibrary.extend.GifExtendBlock;
 
-import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,9 +40,12 @@ public class GifDrawable extends Drawable {
     private int[] color_table;
     private byte[] extendBlockBytes;
     private List<GifExtendBlock> extendBlocks = new ArrayList<>();
-    private ArrayList<int[]> pic_list = new ArrayList<>();
+    private ArrayList<GifImagePixelModel> pic_list = new ArrayList<>();
+
+    private Handler handler;
 
     public GifDrawable() {
+        handler = new Handler(Looper.getMainLooper());
         mPaint = new Paint();
         mPaint.setAntiAlias(true);
     }
@@ -147,21 +150,47 @@ public class GifDrawable extends Drawable {
         this.version = version;
     }
 
-    public void addImageDecodeData(int[] decode) {
-        pic_list.add(decode);
+    public ArrayList<GifImagePixelModel> getImageDecodeData() {
+        return pic_list;
     }
+
+    public void addImageDecodeData(GifImageBlock imageBlock, int[] decode) {
+        GifImagePixelModel model = new GifImagePixelModel();
+        model.setWidth(imageBlock.getImageWidth());
+        model.setHeight(imageBlock.getImageHeight());
+        model.setOffsetX(imageBlock.getOffsetX());
+        model.setOffsetY(imageBlock.getOffsetY());
+        model.setData(decode);
+        pic_list.add(model);
+    }
+
+    private int currentIndex = -1;
 
     @Override
     public void draw(Canvas canvas) {
         //TODO
-        if (pic_list.size() > 0) {
-            Log.d("GifDrawable", "draw: 1");
-            Bitmap bitmap = Bitmap.createBitmap(logicalWidth, logicalHeight, Bitmap.Config.ARGB_8888);
-            Log.d("GifDrawable", "draw: 2");
-            bitmap.copyPixelsFromBuffer(IntBuffer.wrap(pic_list.get(0)));
-            Log.d("GifDrawable", "draw: 3");
-            canvas.drawBitmap(bitmap, 0, 0, mPaint);
+        currentIndex++;
+        if (pic_list.size() == 0) {
+            return;
         }
+        if (currentIndex >= pic_list.size()) {
+            currentIndex = 0;
+        }
+        GifImagePixelModel model = pic_list.get(currentIndex);
+        drawGif(canvas, model);
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                invalidateSelf();
+            }
+        }, model.getDelayTime());
+    }
+
+    private void drawGif(Canvas canvas, GifImagePixelModel model) {
+        //TODO 不能每次都create，会造成内存波动
+        Bitmap bitmap = Bitmap.createBitmap(model.getWidth(), model.getHeight(), Bitmap.Config.ARGB_8888);
+        bitmap.setPixels(model.getData(), 0, model.getWidth(), 0, 0, model.getWidth(), model.getHeight());
+        canvas.drawBitmap(bitmap, model.getOffsetX(), model.getOffsetY(), mPaint);
     }
 
     @Override

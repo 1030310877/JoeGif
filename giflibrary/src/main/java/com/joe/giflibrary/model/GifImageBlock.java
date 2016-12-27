@@ -1,6 +1,9 @@
 package com.joe.giflibrary.model;
 
+import android.util.Log;
+
 import java.util.ArrayList;
+import java.util.Locale;
 
 /**
  * Description
@@ -57,14 +60,15 @@ public class GifImageBlock {
         if (data[0] != FLAG_IMAGE_BLOCK || data.length != 10) {
             throw new IllegalArgumentException("data bytes do not match IMAGE_BLOCK(0x2c)");
         }
-        setOffsetX(((data[2] & 0xff) << 8) | data[1]);
-        setOffsetY(((data[4] & 0xff) << 8) | data[3]);
-        setImageWidth(((data[6] & 0xff) << 8) | data[5]);
-        setImageHeight(((data[8] & 0xff) << 8) | data[7]);
+        setOffsetX(((data[2] & 0xff) << 8) | (data[1] & 0xff));
+        setOffsetY(((data[4] & 0xff) << 8) | (data[3] & 0xff));
+        setImageWidth(((data[6] & 0xff) << 8) | (data[5] & 0xff));
+        setImageHeight(((data[8] & 0xff) << 8) | (data[7] & 0xff));
         setLocalColorTableFlag((data[9] & 0b1000_0000) != 0);
         setInterlaceFlag((data[9] & 0b0100_0000) != 0);
         setLocalSortFlag((data[9] & 0b0010_0000) != 0);
         setLocalPixel(data[9] & 0x07);
+        Log.d("GifImageBlock", toString());
     }
 
     public byte getHeader() {
@@ -141,5 +145,12 @@ public class GifImageBlock {
 
     public byte getLZWSize() {
         return LZWSize;
+    }
+
+    @Override
+    public String toString() {
+        return String.format(Locale.getDefault(),
+                "Width=%d,Height=%d,OffsetX=%d,OffsetY=%d,InterlaceFlag=%b,SortFlag=%b",
+                imageWidth, imageHeight, offsetX, offsetY, interlaceFlag, localSortFlag);
     }
 }

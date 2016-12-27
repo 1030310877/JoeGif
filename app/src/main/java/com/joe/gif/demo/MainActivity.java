@@ -1,6 +1,7 @@
 package com.joe.gif.demo;
 
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 import android.widget.ImageView;
 
@@ -13,6 +14,7 @@ import java.io.InputStream;
 public class MainActivity extends AppCompatActivity {
 
     private ImageView imgView;
+    private Handler handler = new Handler();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -26,16 +28,15 @@ public class MainActivity extends AppCompatActivity {
                 try {
                     in = getAssets().open("my.gif");
                     final GifDrawable drawable = GifFactory.readGifResource(in);
-                    imgView.post(new Runnable() {
+                    handler.postDelayed(new Runnable() {
                         @Override
                         public void run() {
                             imgView.setImageDrawable(drawable);
                         }
-                    });
+                    }, 100);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-
             }
         }).start();
     }
