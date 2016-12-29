@@ -22,6 +22,7 @@ import java.util.Locale;
  * Created by chenqiao on 2016/11/11.
  */
 class GifDecoder {
+    static int transparentColorIndex = -1;
 
     static boolean isGif(GifDrawable drawable, byte[] header) {
         if (header.length == GifDrawable.HEADER_LENGTH) {
@@ -82,6 +83,7 @@ class GifDecoder {
                     Log.d("GifDecoder", "readDataStream: Image Block");
                     GifImageBlock block = addImageBlock(drawable, gifIn);
                     decodeImageBlock(drawable, block);
+                    transparentColorIndex = -1;
                     break;
                 case GifDrawable.FLAG_FILE_END:
                     Log.d("GifDecoder", "readDataStream: File End");
@@ -200,6 +202,7 @@ class GifDecoder {
                 Log.d("GifDecoder", "readDataStream: Text Extend Block");
                 extendBlock = new GifTextExtendBlock();
                 readTextExtendBlock((GifTextExtendBlock) extendBlock, gifIn);
+                transparentColorIndex = -1;
                 break;
         }
         if (extendBlock != null) {
@@ -212,6 +215,11 @@ class GifDecoder {
                 ArrayList<GifImagePixelModel> list = drawable.getImageDecodeData();
                 if (list != null && list.size() > 0) {
                     list.get(list.size() - 1).setDelayTime(time);
+                }
+                if (((GifGraphicControlExtendBlock) extendBlock).isTransparentColorFlag()) {
+                    transparentColorIndex = ((GifGraphicControlExtendBlock) extendBlock).getTransparentColorIndex();
+                } else {
+                    transparentColorIndex = -1;
                 }
             }
         }
@@ -284,7 +292,7 @@ class GifDecoder {
         return header;
     }
 
-    public static byte[] readDataBlock(InputStream in) throws IOException {
+    private static byte[] readDataBlock(InputStream in) throws IOException {
         int blockHeader = in.read();
         byte[] block = new byte[blockHeader];
         if (blockHeader > 0 && in.read(block, 0, blockHeader) < 0) {

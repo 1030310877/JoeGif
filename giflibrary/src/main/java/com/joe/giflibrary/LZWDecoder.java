@@ -9,9 +9,9 @@ import java.util.LinkedList;
  * Description
  * Created by chenqiao on 2016/11/12.
  */
-public class LZWDecoder {
+class LZWDecoder {
 
-    public static ArrayList<Integer> decode(GifImageBlock block) {
+    static ArrayList<Integer> decode(GifImageBlock block) {
         ArrayList<byte[]> imageEncodeData = block.getImageEncodeData();
         int lzwCodeSize = block.getLZWSize();
         int rootTableSize = 1 << lzwCodeSize;
@@ -30,6 +30,7 @@ public class LZWDecoder {
             if (code == CC) {
                 dataBits = lzwCodeSize + 1;
                 dictionary = new Dictionary(rootTableSize);
+                oldCode = -1;
                 continue;
             }
             Word w = dictionary.get(code);
@@ -64,7 +65,12 @@ public class LZWDecoder {
         ArrayList<Integer> decodeData = new ArrayList<>();
         for (Word word : result) {
             for (Short aShort : word.codes) {
-                int colorInt = block.getColor_table()[aShort];
+                int colorInt;
+                if (GifDecoder.transparentColorIndex == aShort) {
+                    colorInt = 0;
+                } else {
+                    colorInt = block.getColor_table()[aShort];
+                }
                 decodeData.add(colorInt);
             }
         }

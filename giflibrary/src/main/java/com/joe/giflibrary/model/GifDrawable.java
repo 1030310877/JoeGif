@@ -8,11 +8,13 @@ import android.graphics.PixelFormat;
 import android.graphics.drawable.Drawable;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.LruCache;
 
 import com.joe.giflibrary.extend.GifExtendBlock;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Description
@@ -44,10 +46,14 @@ public class GifDrawable extends Drawable {
 
     private Handler handler;
 
+    private LruCache<String, Bitmap> cache;
+
     public GifDrawable() {
         handler = new Handler(Looper.getMainLooper());
         mPaint = new Paint();
         mPaint.setAntiAlias(true);
+        int maxMemory = (int) (Runtime.getRuntime().maxMemory() / 1024);
+        cache = new LruCache<>(maxMemory / 8);
     }
 
     public int[] getColor_table() {
@@ -187,8 +193,14 @@ public class GifDrawable extends Drawable {
     }
 
     private void drawGif(Canvas canvas, GifImagePixelModel model) {
-        //TODO 不能每次都create，会造成内存波动
-        Bitmap bitmap = Bitmap.createBitmap(model.getWidth(), model.getHeight(), Bitmap.Config.ARGB_8888);
+        int width = model.getWidth();
+        int height = model.getHeight();
+        String key = String.format(Locale.getDefault(), "%d*%d", width, height);
+        Bitmap bitmap = cache.get(key);
+        if (bitmap == null) {
+            bitmap = Bitmap.createBitmap(model.getWidth(), model.getHeight(), Bitmap.Config.ARGB_8888);
+            cache.put(key, bitmap);
+        }
         bitmap.setPixels(model.getData(), 0, model.getWidth(), 0, 0, model.getWidth(), model.getHeight());
         canvas.drawBitmap(bitmap, model.getOffsetX(), model.getOffsetY(), mPaint);
     }
