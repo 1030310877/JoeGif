@@ -13,6 +13,7 @@ public class GifImagePixelModel {
     private short delayTime;
     private int offsetX;
     private int offsetY;
+    private byte disposalMethod;
 
     public GifImagePixelModel() {
     }
@@ -70,5 +71,13 @@ public class GifImagePixelModel {
         return String.format(Locale.getDefault(),
                 "Width=%d,Height=%d,OffsetX=%d,OffsetY=%d,DelayTime=%d",
                 width, height, offsetX, offsetY, delayTime);
+    }
+
+    public void setDisposalMethod(byte disposalMethod) {
+        this.disposalMethod = disposalMethod;
+    }
+
+    public byte getDisposalMethod() {
+        return disposalMethod;
     }
 }

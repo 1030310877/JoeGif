@@ -10,6 +10,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.LruCache;
 
+import com.joe.giflibrary.GifDecoder;
 import com.joe.giflibrary.extend.GifExtendBlock;
 
 import java.util.ArrayList;
@@ -167,10 +168,14 @@ public class GifDrawable extends Drawable {
         model.setOffsetX(imageBlock.getOffsetX());
         model.setOffsetY(imageBlock.getOffsetY());
         model.setData(decode);
+        model.setDisposalMethod(GifDecoder.tempDisposalMethod);
         pic_list.add(model);
     }
 
     private int currentIndex = -1;
+
+    private Bitmap lastBitmap;
+    private Canvas saveCanvas;
 
     @Override
     public void draw(Canvas canvas) {
@@ -179,6 +184,12 @@ public class GifDrawable extends Drawable {
         if (pic_list.size() == 0) {
             return;
         }
+        if (lastBitmap == null) {
+            lastBitmap = Bitmap.createBitmap(logicalWidth, logicalHeight, Bitmap.Config.ARGB_8888);
+            saveCanvas = new Canvas(lastBitmap);
+        }
+        canvas.drawBitmap(lastBitmap, 0, 0, mPaint);
+
         if (currentIndex >= pic_list.size()) {
             currentIndex = 0;
         }
@@ -203,6 +214,9 @@ public class GifDrawable extends Drawable {
         }
         bitmap.setPixels(model.getData(), 0, model.getWidth(), 0, 0, model.getWidth(), model.getHeight());
         canvas.drawBitmap(bitmap, model.getOffsetX(), model.getOffsetY(), mPaint);
+        if (model.getDisposalMethod() == (byte) 0x01) {
+            saveCanvas.drawBitmap(bitmap, model.getOffsetX(), model.getOffsetY(), mPaint);
+        }
     }
 
     @Override

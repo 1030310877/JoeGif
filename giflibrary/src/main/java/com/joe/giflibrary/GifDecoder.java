@@ -21,8 +21,9 @@ import java.util.Locale;
  * Description
  * Created by chenqiao on 2016/11/11.
  */
-class GifDecoder {
-    static int transparentColorIndex = -1;
+public class GifDecoder {
+    public static int transparentColorIndex = -1;
+    public static byte tempDisposalMethod = 0x00;
 
     static boolean isGif(GifDrawable drawable, byte[] header) {
         if (header.length == GifDrawable.HEADER_LENGTH) {
@@ -221,6 +222,7 @@ class GifDecoder {
                 } else {
                     transparentColorIndex = -1;
                 }
+                tempDisposalMethod = ((GifGraphicControlExtendBlock) extendBlock).getDisposalMethod();
             }
         }
     }
