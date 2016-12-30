@@ -4,8 +4,15 @@ Android Gif解析
 Android Gif图片解析显示。  
 已初步实现gif的播放，使用LruCache进行缓存，解决了内存波动。  
 ![](https://github.com/1030310877/JoeGif/blob/master/gif/demo.gif)  
-
-
+使用GifImageView方便加载Gif图片：
+```
+    <com.joe.giflibrary.GifImageView
+        android:id="@+id/img"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        app:srcId="@drawable/loading" />
+```
 ###正在编写
 * 是否循环播放的设置
 - 文本扩展块的显示  
