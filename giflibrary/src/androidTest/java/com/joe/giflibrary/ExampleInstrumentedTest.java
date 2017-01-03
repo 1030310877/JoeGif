@@ -23,7 +23,6 @@ public class ExampleInstrumentedTest {
         // Context of the app under test.
         Context appContext = InstrumentationRegistry.getTargetContext();
         InputStream in = appContext.getAssets().open("loading.gif");
-        GifFactory.readGifResource(in);
         assertEquals("com.joe.giflibrary.test", appContext.getPackageName());
     }
 }

@@ -15,7 +15,7 @@ public class GifExtendBlock {
     public static final byte LABEL_TEXT_EXTEND_BLOCK = 0x01;
 
     private byte type;
-    private int size;
+    private byte size;
     private byte[] controlData;
     private ArrayList<byte[]> dataSubBlocks;
 
@@ -47,11 +47,11 @@ public class GifExtendBlock {
         this.type = type;
     }
 
-    public int getSize() {
+    public byte getSize() {
         return size;
     }
 
-    public void setSize(int size) {
+    public void setSize(byte size) {
         this.size = size;
     }
 

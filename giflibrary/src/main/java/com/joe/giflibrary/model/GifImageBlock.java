@@ -1,7 +1,5 @@
 package com.joe.giflibrary.model;
 
-import android.util.Log;
-
 import java.util.ArrayList;
 import java.util.Locale;
 
@@ -14,14 +12,14 @@ public class GifImageBlock {
 
     private byte[] data;
     private byte header;
-    private int offsetX;
-    private int offsetY;
-    private int imageWidth;
-    private int imageHeight;
+    private short offsetX;
+    private short offsetY;
+    private short imageWidth;
+    private short imageHeight;
     private boolean localColorTableFlag;
     private boolean interlaceFlag;
     private boolean localSortFlag;
-    private int localPixel;
+    private byte localPixel;
     private int[] color_table;
     private byte LZWSize;
     private ArrayList<byte[]> imageEncodeData;
@@ -60,50 +58,50 @@ public class GifImageBlock {
         if (data[0] != FLAG_IMAGE_BLOCK || data.length != 10) {
             throw new IllegalArgumentException("data bytes do not match IMAGE_BLOCK(0x2c)");
         }
-        setOffsetX(((data[2] & 0xff) << 8) | (data[1] & 0xff));
-        setOffsetY(((data[4] & 0xff) << 8) | (data[3] & 0xff));
-        setImageWidth(((data[6] & 0xff) << 8) | (data[5] & 0xff));
-        setImageHeight(((data[8] & 0xff) << 8) | (data[7] & 0xff));
+        setOffsetX((short) (((data[2] & 0xff) << 8) | (data[1] & 0xff)));
+        setOffsetY((short) (((data[4] & 0xff) << 8) | (data[3] & 0xff)));
+        setImageWidth((short) (((data[6] & 0xff) << 8) | (data[5] & 0xff)));
+        setImageHeight((short) (((data[8] & 0xff) << 8) | (data[7] & 0xff)));
         setLocalColorTableFlag((data[9] & 0b1000_0000) != 0);
         setInterlaceFlag((data[9] & 0b0100_0000) != 0);
         setLocalSortFlag((data[9] & 0b0010_0000) != 0);
-        setLocalPixel(data[9] & 0x07);
-        Log.d("GifImageBlock", toString());
+        setLocalPixel((byte) (data[9] & 0x07));
+//        Log.d("GifImageBlock", toString());
     }
 
     public byte getHeader() {
         return header;
     }
 
-    public int getOffsetX() {
+    public short getOffsetX() {
         return offsetX;
     }
 
-    public void setOffsetX(int offsetX) {
+    public void setOffsetX(short offsetX) {
         this.offsetX = offsetX;
     }
 
-    public int getOffsetY() {
+    public short getOffsetY() {
         return offsetY;
     }
 
-    public void setOffsetY(int offsetY) {
+    public void setOffsetY(short offsetY) {
         this.offsetY = offsetY;
     }
 
-    public int getImageWidth() {
+    public short getImageWidth() {
         return imageWidth;
     }
 
-    public void setImageWidth(int imageWidth) {
+    public void setImageWidth(short imageWidth) {
         this.imageWidth = imageWidth;
     }
 
-    public int getImageHeight() {
+    public short getImageHeight() {
         return imageHeight;
     }
 
-    public void setImageHeight(int imageHeight) {
+    public void setImageHeight(short imageHeight) {
         this.imageHeight = imageHeight;
     }
 
@@ -131,11 +129,11 @@ public class GifImageBlock {
         this.localSortFlag = localSortFlag;
     }
 
-    public int getLocalPixel() {
+    public byte getLocalPixel() {
         return localPixel;
     }
 
-    public void setLocalPixel(int localPixel) {
+    public void setLocalPixel(byte localPixel) {
         this.localPixel = localPixel;
     }
 

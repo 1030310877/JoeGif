@@ -1,7 +1,5 @@
 package com.joe.giflibrary.extend;
 
-import android.util.Log;
-
 import java.util.Locale;
 
 /**
@@ -13,7 +11,7 @@ public class GifGraphicControlExtendBlock extends GifExtendBlock {
     private byte disposalMethod = 0x00;
     private boolean inputFlag = false;
     private boolean transparentColorFlag = false;
-    private int transparentColorIndex = -1;
+    private short transparentColorIndex = -1;
     private short delayTime = 0;
 
     public GifGraphicControlExtendBlock() {
@@ -27,8 +25,8 @@ public class GifGraphicControlExtendBlock extends GifExtendBlock {
         transparentColorFlag = (controlData[0] & 0x01) != 0;
         inputFlag = (controlData[0] & 0x02) != 0;
         delayTime = (short) ((((controlData[2] & 0xff) << 8) | (controlData[1] & 0xff)) * 10);
-        transparentColorIndex = controlData[3] & 0xff;
-        Log.d("GraphicControlBlock", toString());
+        transparentColorIndex = (short) (controlData[3] & 0xff);
+//        Log.d("GraphicControlBlock", toString());
     }
 
     public byte getDisposalMethod() {
@@ -43,7 +41,7 @@ public class GifGraphicControlExtendBlock extends GifExtendBlock {
         return transparentColorFlag;
     }
 
-    public int getTransparentColorIndex() {
+    public short getTransparentColorIndex() {
         return transparentColorIndex;
     }
 

@@ -31,9 +31,11 @@ public class GifDrawable extends Drawable {
 
     private Paint mPaint;
 
+    private boolean isDecodeFinished = false;
+
     private String version;
-    private int logicalWidth;
-    private int logicalHeight;
+    private short logicalWidth;
+    private short logicalHeight;
     private boolean globalColorTableFlag;
     private byte colorResolution;
     private boolean sortFlag;
@@ -49,12 +51,30 @@ public class GifDrawable extends Drawable {
 
     private LruCache<String, Bitmap> cache;
 
+    private boolean isLowMemory = false;
+
     public GifDrawable() {
         handler = new Handler(Looper.getMainLooper());
         mPaint = new Paint();
         mPaint.setAntiAlias(true);
         int maxMemory = (int) (Runtime.getRuntime().maxMemory() / 1024);
         cache = new LruCache<>(maxMemory / 8);
+    }
+
+    public boolean isDecodeFinished() {
+        return isDecodeFinished;
+    }
+
+    public void setDecodeFinished(boolean decodeFinished) {
+        isDecodeFinished = decodeFinished;
+    }
+
+    public boolean isLowMemory() {
+        return isLowMemory;
+    }
+
+    public void setLowMemory(boolean lowMemory) {
+        isLowMemory = lowMemory;
     }
 
     public int[] getColor_table() {
@@ -83,6 +103,12 @@ public class GifDrawable extends Drawable {
 
     public void setExtendBlocks(List<GifExtendBlock> extendBlocks) {
         this.extendBlocks = extendBlocks;
+    }
+
+    public void clearExtendBlocks() {
+        if (extendBlocks != null) {
+            extendBlocks.clear();
+        }
     }
 
     public byte getPixelAspectRadio() {
@@ -133,19 +159,19 @@ public class GifDrawable extends Drawable {
         this.pixel = pixel;
     }
 
-    public int getLogicalWidth() {
+    public short getLogicalWidth() {
         return logicalWidth;
     }
 
-    public void setLogicalWidth(int logicalWidth) {
+    public void setLogicalWidth(short logicalWidth) {
         this.logicalWidth = logicalWidth;
     }
 
-    public int getLogicalHeight() {
+    public short getLogicalHeight() {
         return logicalHeight;
     }
 
-    public void setLogicalHeight(int logicalHeight) {
+    public void setLogicalHeight(short logicalHeight) {
         this.logicalHeight = logicalHeight;
     }
 
@@ -172,7 +198,7 @@ public class GifDrawable extends Drawable {
         pic_list.add(model);
     }
 
-    private int currentIndex = -1;
+    private short currentIndex = -1;
 
     private Bitmap lastBitmap;
     private Canvas saveCanvas;
@@ -191,8 +217,13 @@ public class GifDrawable extends Drawable {
         canvas.drawBitmap(lastBitmap, 0, 0, mPaint);
 
         if (currentIndex >= pic_list.size()) {
-            currentIndex = 0;
+            if (isDecodeFinished) {
+                currentIndex = 0;
+            } else {
+                currentIndex = (short) (pic_list.size() - 1);
+            }
         }
+        
         GifImagePixelModel model = pic_list.get(currentIndex);
         drawGif(canvas, model);
         handler.postDelayed(new Runnable() {

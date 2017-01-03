@@ -32,23 +32,23 @@ public class BitInputStream {
         left_bit = 8;
     }
 
-    public int readBits(int bits) {
+    public short readBits(byte bits) {
         if (bits < 0) {
             return -1;
         }
-        return read(bits, bits, 0);
+        return read(bits, bits, (short) 0);
     }
 
-    private int read(int originalBits, int needBits, int nowResult) {
+    private short read(byte originalBits, byte needBits, short nowResult) {
         if (array_p >= imageEncodeData.size() || byte_p >= imageEncodeData.get(array_p).length) {
             return -1;
         }
-        int temp, result;
-        int nowByte = imageEncodeData.get(array_p)[byte_p] & 0xff;
+        short temp, result;
+        short nowByte = (short) (imageEncodeData.get(array_p)[byte_p] & 0xff);
         if (needBits <= left_bit) {
             //当前byte剩余bit足够
-            temp = (nowByte & (((1 << needBits) - 1) << (8 - left_bit))) >> (8 - left_bit);
-            result = (temp << (originalBits - needBits)) | nowResult;//前后拼接
+            temp = (short) ((nowByte & (((1 << needBits) - 1) << (8 - left_bit))) >> (8 - left_bit));
+            result = (short) ((temp << (originalBits - needBits)) | nowResult);//前后拼接
             left_bit -= needBits;
             if (left_bit == 0) {
                 byte_p++;
@@ -60,10 +60,10 @@ public class BitInputStream {
             }
         } else {
             //当前byte剩余bit不足
-            int usedBits = 8 - left_bit;
+            byte usedBits = (byte) (8 - left_bit);
             //先取出剩余bit
-            temp = (nowByte & (~((1 << usedBits) - 1))) >> usedBits;
-            temp = (temp << (originalBits - needBits)) | nowResult;
+            temp = (short) ((nowByte & (~((1 << usedBits) - 1))) >> usedBits);
+            temp = (short) ((temp << (originalBits - needBits)) | nowResult);
             needBits -= left_bit;
 
             //读取下一个byte
@@ -75,7 +75,7 @@ public class BitInputStream {
             left_bit = 8;
             if (array_p >= imageEncodeData.size() || byte_p >= imageEncodeData.get(array_p).length) {
                 //如果下一个byte已经溢出，则直接返回当前值
-                return temp;
+                return (short) temp;
             }
             result = read(originalBits, needBits, temp);
         }

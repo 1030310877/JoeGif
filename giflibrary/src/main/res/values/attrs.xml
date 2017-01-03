@@ -2,5 +2,7 @@
 <resources>
     <declare-styleable name="GifImageView">
         <attr name="srcId" format="reference" />
+        <attr name="lowMemory" format="boolean" />
+        <attr name="syncShow" format="boolean" />
     </declare-styleable>
 </resources>

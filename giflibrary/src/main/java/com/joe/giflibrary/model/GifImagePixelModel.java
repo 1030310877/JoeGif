@@ -7,46 +7,46 @@ import java.util.Locale;
  * Created by chenqiao on 2016/12/13.
  */
 public class GifImagePixelModel {
-    private int width;
-    private int height;
+    private short width;
+    private short height;
     private int[] data;
     private short delayTime;
-    private int offsetX;
-    private int offsetY;
+    private short offsetX;
+    private short offsetY;
     private byte disposalMethod;
 
     public GifImagePixelModel() {
     }
 
-    public int getWidth() {
+    public short getWidth() {
         return width;
     }
 
-    public void setWidth(int width) {
+    public void setWidth(short width) {
         this.width = width;
     }
 
-    public int getHeight() {
+    public short getHeight() {
         return height;
     }
 
-    public void setHeight(int height) {
+    public void setHeight(short height) {
         this.height = height;
     }
 
-    public int getOffsetX() {
+    public short getOffsetX() {
         return offsetX;
     }
 
-    public void setOffsetX(int offsetX) {
+    public void setOffsetX(short offsetX) {
         this.offsetX = offsetX;
     }
 
-    public int getOffsetY() {
+    public short getOffsetY() {
         return offsetY;
     }
 
-    public void setOffsetY(int offsetY) {
+    public void setOffsetY(short offsetY) {
         this.offsetY = offsetY;
     }
 

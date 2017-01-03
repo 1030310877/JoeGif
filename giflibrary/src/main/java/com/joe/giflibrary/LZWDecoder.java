@@ -11,24 +11,31 @@ import java.util.LinkedList;
  */
 class LZWDecoder {
 
+    static ArrayList<Word> result = new ArrayList<>();
+    static ArrayList<Integer> decodeData = new ArrayList<>();
+
     static ArrayList<Integer> decode(GifImageBlock block) {
         ArrayList<byte[]> imageEncodeData = block.getImageEncodeData();
-        int lzwCodeSize = block.getLZWSize();
-        int rootTableSize = 1 << lzwCodeSize;
-        int dataBits = lzwCodeSize + 1;
-        int CC = 1 << lzwCodeSize;
-        int EOI = CC + 1;
+        byte lzwCodeSize = block.getLZWSize();
+        short rootTableSize = (short) (1 << lzwCodeSize);
+        byte dataBits = (byte) (lzwCodeSize + 1);
+        short CC = (short) (1 << lzwCodeSize);
+        short EOI = (short) (CC + 1);
 
         BitInputStream bitInputStream = new BitInputStream(imageEncodeData);
         Dictionary dictionary = new Dictionary(rootTableSize);
         int oldCode = -1, code;
-        ArrayList<Word> result = new ArrayList<>();
+        if (result == null) {
+            result = new ArrayList<>();
+        } else {
+            result.clear();
+        }
         while ((code = bitInputStream.readBits(dataBits)) != -1) {
             if (code == EOI) {
                 break;
             }
             if (code == CC) {
-                dataBits = lzwCodeSize + 1;
+                dataBits = (byte) (lzwCodeSize + 1);
                 dictionary = new Dictionary(rootTableSize);
                 oldCode = -1;
                 continue;
@@ -62,7 +69,11 @@ class LZWDecoder {
             }
         }
 
-        ArrayList<Integer> decodeData = new ArrayList<>();
+        if (decodeData == null) {
+            decodeData = new ArrayList<>();
+        } else {
+            decodeData.clear();
+        }
         for (Word word : result) {
             for (Short aShort : word.codes) {
                 int colorInt;

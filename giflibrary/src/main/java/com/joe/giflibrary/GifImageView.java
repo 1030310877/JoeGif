@@ -23,6 +23,10 @@ public class GifImageView extends ImageView {
 
     private GifDrawable drawable;
 
+    private boolean isLowMemory;
+
+    private boolean asyncShow = true;
+
     public GifImageView(Context context) {
         this(context, null);
     }
@@ -35,6 +39,10 @@ public class GifImageView extends ImageView {
         super(context, attrs, defStyleAttr);
         TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.GifImageView);
         gifSrcId = a.getResourceId(R.styleable.GifImageView_srcId, -1);
+        asyncShow = a.getBoolean(R.styleable.GifImageView_syncShow, true);
+        isLowMemory = a.getBoolean(R.styleable.GifImageView_lowMemory, false);
+        drawable = new GifDrawable();
+        drawable.setLowMemory(isLowMemory);
         a.recycle();
         readGifResource();
     }
@@ -52,19 +60,31 @@ public class GifImageView extends ImageView {
             thread = new DealThread();
             thread.start();
         }
+        if (asyncShow) {
+            postDelayed(displayRunnable, 100);
+        }
     }
 
     private class DealThread extends Thread {
+        private InputStream inputStream;
+
         @Override
         public void run() {
             if (gifSrcId > 0) {
-                InputStream inputStream = getResources().openRawResource(gifSrcId);
+                inputStream = getResources().openRawResource(gifSrcId);
+                GifFactory.readGifResource(drawable, inputStream);
+                if (!isInterrupted() && drawable != null) {
+                    postDelayed(displayRunnable, 100);
+                }
+            }
+        }
+
+        @Override
+        public void interrupt() {
+            super.interrupt();
+            if (inputStream != null) {
                 try {
-                    GifDrawable temp = GifFactory.readGifResource(inputStream);
-                    if (!isInterrupted()) {
-                        drawable = temp;
-                        postDelayed(displayRunnable, 100);
-                    }
+                    inputStream.close();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }

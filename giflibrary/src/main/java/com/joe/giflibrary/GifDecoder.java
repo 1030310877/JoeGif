@@ -22,10 +22,12 @@ import java.util.Locale;
  * Created by chenqiao on 2016/11/11.
  */
 public class GifDecoder {
-    public static int transparentColorIndex = -1;
+    public static short transparentColorIndex = -1;
     public static byte tempDisposalMethod = 0x00;
+    private static byte[] imageDescriptor;
 
     static boolean isGif(GifDrawable drawable, byte[] header) {
+        drawable.setDecodeFinished(false);
         if (header.length == GifDrawable.HEADER_LENGTH) {
             if (header[0] == 'G' && header[1] == 'I' && header[2] == 'F') {
                 String version = String.format(Locale.getDefault(), "%c%c%c", header[3], header[4], header[5]);
@@ -46,8 +48,8 @@ public class GifDecoder {
 
     static void setGifParams(GifDrawable drawable, byte[] screenDescriptor) {
         if (screenDescriptor.length == GifDrawable.LOGICAL_SCREEN_DESCRIPTOR_LENGTH) {
-            int width = ((screenDescriptor[1] & 0xff) << 8 | (screenDescriptor[0] & 0xff));
-            int height = ((screenDescriptor[3] & 0xff) << 8 | (screenDescriptor[2] & 0xff));
+            short width = (short) ((screenDescriptor[1] & 0xff) << 8 | (screenDescriptor[0] & 0xff));
+            short height = (short) ((screenDescriptor[3] & 0xff) << 8 | (screenDescriptor[2] & 0xff));
             Log.d("GifDecoder", "width=" + width + "  height=" + height);
             drawable.setLogicalWidth(width);
             drawable.setLogicalHeight(height);
@@ -61,10 +63,10 @@ public class GifDecoder {
     }
 
     static void setGlobalColorTable(GifDrawable drawable, InputStream gifIn) throws IOException {
-        int index = 1 << (1 + (drawable.getPixel() & 0xff));
+        short index = (short) (1 << (1 + (drawable.getPixel() & 0xff)));
         int r, g, b;
         int[] colorTable = new int[index];
-        for (int i = 0; i < index; i++) {
+        for (short i = 0; i < index; i++) {
             r = ((byte) gifIn.read()) & 0xff;
             g = ((byte) gifIn.read()) & 0xff;
             b = ((byte) gifIn.read()) & 0xff;
@@ -84,10 +86,23 @@ public class GifDecoder {
                     Log.d("GifDecoder", "readDataStream: Image Block");
                     GifImageBlock block = addImageBlock(drawable, gifIn);
                     decodeImageBlock(drawable, block);
+                    if (drawable.isLowMemory()) {
+                        block.setColor_table(null);
+                    }
                     transparentColorIndex = -1;
                     break;
                 case GifDrawable.FLAG_FILE_END:
                     Log.d("GifDecoder", "readDataStream: File End");
+                    drawable.setDecodeFinished(true);
+                    imageDescriptor = null;
+                    graphicData = null;
+                    textData = null;
+                    LZWDecoder.result = null;
+                    LZWDecoder.decodeData = null;
+                    if (drawable.isLowMemory()) {
+                        drawable.setColor_table(null);
+                        drawable.clearExtendBlocks();
+                    }
                     return;
                 default:
                     Log.d("GifDecoder", "readDataStream: unknown");
@@ -102,7 +117,7 @@ public class GifDecoder {
         int height = drawable.getLogicalHeight();
         int[] imageOriginalData = new int[width * height];
         if (imageBlock.isInterlaceFlag()) {
-            Log.d("GifDecoder", "decodeImageBlock: isInterlace");
+//            Log.d("GifDecoder", "decodeImageBlock: isInterlace");
             int line1 = height % 8 == 0 ? height / 8 : (int) Math.ceil(height / 8f);
             int temp = height - 4;
             int line2 = temp <= 0 ? 0 : (temp % 8 == 0 ? temp / 8 : (int) Math.ceil(temp / 8f));
@@ -133,7 +148,7 @@ public class GifDecoder {
                 }
             }
         } else {
-            Log.d("GifDecoder", "decodeImageBlock: not isInterlace");
+//            Log.d("GifDecoder", "decodeImageBlock: not isInterlace");
             for (int i = 0; i < decodedData.size(); i++) {
                 imageOriginalData[i] = decodedData.get(i);
             }
@@ -144,15 +159,17 @@ public class GifDecoder {
 
     private static GifImageBlock addImageBlock(GifDrawable drawable, InputStream gifIn) throws IOException {
         GifImageBlock block = new GifImageBlock();
-        byte[] imageDescriptor = new byte[10];
+        if (imageDescriptor == null) {
+            imageDescriptor = new byte[10];
+        }
         imageDescriptor[0] = GifImageBlock.FLAG_IMAGE_BLOCK;
         gifIn.read(imageDescriptor, 1, 9);
         block.setData(imageDescriptor);
         if (block.isLocalColorTableFlag()) {
-            int index = 1 << (1 + (block.getLocalPixel() & 0xff));
+            short index = (short) (1 << (1 + (block.getLocalPixel() & 0xff)));
             int r, g, b;
             int[] colorTable = new int[index];
-            for (int i = 0; i < index; i++) {
+            for (short i = 0; i < index; i++) {
                 r = ((byte) gifIn.read()) & 0xff;
                 g = ((byte) gifIn.read()) & 0xff;
                 b = ((byte) gifIn.read()) & 0xff;
@@ -168,9 +185,9 @@ public class GifDecoder {
     }
 
     private static void readImageData(GifImageBlock block, InputStream gifIn) throws IOException {
-        int lzwSize = gifIn.read();
-        block.setLZWSize((byte) lzwSize);
-        Log.d("GifDecoder", "readImageData LZW Size: " + lzwSize);
+        byte lzwSize = (byte) gifIn.read();
+        block.setLZWSize(lzwSize);
+//        Log.d("GifDecoder", "readImageData LZW Size: " + lzwSize);
         byte[] imageDataBlock;
         do {
             imageDataBlock = readDataBlock(gifIn);
@@ -207,7 +224,9 @@ public class GifDecoder {
                 break;
         }
         if (extendBlock != null) {
-            drawable.addExtendBlock(extendBlock);
+            if (!drawable.isLowMemory()) {
+                drawable.addExtendBlock(extendBlock);
+            }
             if (extendBlock instanceof GifGraphicControlExtendBlock) {
                 short time = 100;
                 if (((GifGraphicControlExtendBlock) extendBlock).getDelayTime() != 0) {
@@ -227,12 +246,16 @@ public class GifDecoder {
         }
     }
 
+    private static byte[] textData;
+
     private static void readTextExtendBlock(GifTextExtendBlock extendBlock, InputStream gifIn) throws IOException {
-        int size = gifIn.read();
+        byte size = (byte) gifIn.read();
         extendBlock.setSize(size);//固定值12
-        byte[] controlData = new byte[size];
-        gifIn.read(controlData);
-        extendBlock.setControlData(controlData);
+        if (textData == null) {
+            textData = new byte[size];
+        }
+        gifIn.read(textData);
+        extendBlock.setControlData(textData);
         byte[] dataSubBlock;
         do {
             dataSubBlock = readDataBlock(gifIn);
@@ -242,12 +265,16 @@ public class GifDecoder {
         } while (dataSubBlock.length > 0);
     }
 
+    private static byte[] graphicData;
+
     private static void readGraphicControlExtendBlock(GifGraphicControlExtendBlock extendBlock, InputStream gifIn) throws IOException {
-        int size = gifIn.read();
+        byte size = (byte) gifIn.read();
         extendBlock.setSize(size);//固定值4
-        byte[] controlData = new byte[size];
-        gifIn.read(controlData);
-        extendBlock.setControlData(controlData);
+        if (graphicData == null) {
+            graphicData = new byte[size];
+        }
+        gifIn.read(graphicData);
+        extendBlock.setControlData(graphicData);
         byte[] dataSubBlock;
         do {
             dataSubBlock = readDataBlock(gifIn);
@@ -258,7 +285,7 @@ public class GifDecoder {
     }
 
     private static void readAppExtendBlock(GifAppExtendBlock extendBlock, InputStream gifIn) throws IOException {
-        int size = gifIn.read();
+        byte size = (byte) gifIn.read();
         extendBlock.setSize(size);//固定值11
         byte[] controlData = new byte[size];
         gifIn.read(controlData);
@@ -295,7 +322,7 @@ public class GifDecoder {
     }
 
     private static byte[] readDataBlock(InputStream in) throws IOException {
-        int blockHeader = in.read();
+        short blockHeader = (short) in.read();
         byte[] block = new byte[blockHeader];
         if (blockHeader > 0 && in.read(block, 0, blockHeader) < 0) {
             throw new IOException("the data has been read is not enough.");
