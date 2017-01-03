@@ -11,8 +11,11 @@ Android Gif图片解析显示。
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_centerInParent="true"
+        app:syncShow="true"
         app:srcId="@drawable/loading" />
 ```
+srcId:Gif对应的图片资源  
+syncShow:是否同步显示图片（边解码边显示）
 ###正在编写
 * 是否循环播放的设置
 - 文本扩展块的显示  
