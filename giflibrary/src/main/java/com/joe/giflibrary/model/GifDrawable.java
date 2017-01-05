@@ -208,6 +208,14 @@ public class GifDrawable extends Drawable {
         //TODO
         currentIndex++;
         if (pic_list.size() == 0) {
+            if (!isDecodeFinished) {
+                handler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        invalidateSelf();
+                    }
+                }, 160);
+            }
             return;
         }
         if (lastBitmap == null) {
@@ -223,7 +231,7 @@ public class GifDrawable extends Drawable {
                 currentIndex = (short) (pic_list.size() - 1);
             }
         }
-        
+
         GifImagePixelModel model = pic_list.get(currentIndex);
         drawGif(canvas, model);
         handler.postDelayed(new Runnable() {

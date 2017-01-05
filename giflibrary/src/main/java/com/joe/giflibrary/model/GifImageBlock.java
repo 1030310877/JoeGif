@@ -10,7 +10,6 @@ import java.util.Locale;
 public class GifImageBlock {
     public static final byte FLAG_IMAGE_BLOCK = 0x2c;
 
-    private byte[] data;
     private byte header;
     private short offsetX;
     private short offsetY;
@@ -49,12 +48,7 @@ public class GifImageBlock {
         imageEncodeData.add(imageDataBlock);
     }
 
-    public byte[] getData() {
-        return data;
-    }
-
     public void setData(byte[] data) {
-        this.data = data;
         if (data[0] != FLAG_IMAGE_BLOCK || data.length != 10) {
             throw new IllegalArgumentException("data bytes do not match IMAGE_BLOCK(0x2c)");
         }
