@@ -1,4 +1,4 @@
-package com.joe.giflibrary.model;
+package com.joe.giflibrary;
 
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -10,8 +10,9 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.LruCache;
 
-import com.joe.giflibrary.GifDecoder;
 import com.joe.giflibrary.extend.GifExtendBlock;
+import com.joe.giflibrary.model.GifImageBlock;
+import com.joe.giflibrary.model.GifImagePixelModel;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,7 +32,7 @@ public class GifDrawable extends Drawable {
 
     private Paint mPaint;
 
-    private boolean isDecodeFinished = false;
+    private boolean isReadFinished = false;
 
     private String version;
     private short logicalWidth;
@@ -46,6 +47,7 @@ public class GifDrawable extends Drawable {
     private byte[] extendBlockBytes;
     private List<GifExtendBlock> extendBlocks = new ArrayList<>();
     private ArrayList<GifImagePixelModel> pic_list = new ArrayList<>();
+    private ArrayList<GifImageBlock> imageBlocks = new ArrayList<>();
 
     private Handler handler;
 
@@ -61,12 +63,12 @@ public class GifDrawable extends Drawable {
         cache = new LruCache<>(maxMemory / 8);
     }
 
-    public boolean isDecodeFinished() {
-        return isDecodeFinished;
+    public boolean isReadFinished() {
+        return isReadFinished;
     }
 
-    public void setDecodeFinished(boolean decodeFinished) {
-        isDecodeFinished = decodeFinished;
+    public void setReadFinished(boolean readFinished) {
+        isReadFinished = readFinished;
     }
 
     public boolean isLowMemory() {
@@ -198,53 +200,130 @@ public class GifDrawable extends Drawable {
         pic_list.add(model);
     }
 
+    public ArrayList<GifImageBlock> getImageBlocks() {
+        return imageBlocks;
+    }
+
+    public void addImageBlock(GifImageBlock block) {
+        block.setDisposalMethod(GifDecoder.tempDisposalMethod);
+        imageBlocks.add(block);
+    }
+
+    public void clearImageBlocks() {
+        imageBlocks.clear();
+    }
+
     private short currentIndex = -1;
 
     private Bitmap lastBitmap;
     private Canvas saveCanvas;
 
+    private GifImagePixelModel tempModel;
+    private boolean isTempDrawn = true;
+
+    private Thread decodeThread;
+
     @Override
     public void draw(Canvas canvas) {
-        //TODO
-        currentIndex++;
-        if (pic_list.size() == 0) {
-            if (!isDecodeFinished) {
+        if (isLowMemory) {
+            if (tempModel == null) {
+                tempModel = new GifImagePixelModel();
+            }
+            if (lastBitmap == null) {
+                lastBitmap = Bitmap.createBitmap(logicalWidth, logicalHeight, Bitmap.Config.ARGB_8888);
+                saveCanvas = new Canvas(lastBitmap);
+            }
+            canvas.drawBitmap(lastBitmap, 0, 0, mPaint);
+            if (!isTempDrawn && decodeThread == null) {
+                drawGif(canvas, tempModel);
+                isTempDrawn = true;
                 handler.postDelayed(new Runnable() {
                     @Override
                     public void run() {
                         invalidateSelf();
                     }
-                }, 160);
-            }
-            return;
-        }
-        if (lastBitmap == null) {
-            lastBitmap = Bitmap.createBitmap(logicalWidth, logicalHeight, Bitmap.Config.ARGB_8888);
-            saveCanvas = new Canvas(lastBitmap);
-        }
-        canvas.drawBitmap(lastBitmap, 0, 0, mPaint);
-
-        if (currentIndex >= pic_list.size()) {
-            if (isDecodeFinished) {
-                currentIndex = 0;
+                }, tempModel.getDelayTime());
+                return;
             } else {
-                currentIndex = (short) (pic_list.size() - 1);
+                drawGif(canvas, tempModel);
+                isTempDrawn = true;
             }
-        }
+            if (decodeThread == null) {
+                currentIndex++;
+                if (currentIndex >= imageBlocks.size()) {
+                    if (isReadFinished) {
+                        currentIndex = 0;
+                    } else {
+                        currentIndex--;
+                        return;
+                    }
+                }
+                decodeThread = new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        isTempDrawn = false;
+                        GifImageBlock block = imageBlocks.get(currentIndex);
+                        tempModel.setWidth(block.getImageWidth());
+                        tempModel.setHeight(block.getImageHeight());
+                        tempModel.setOffsetX(block.getOffsetX());
+                        tempModel.setOffsetY(block.getOffsetY());
+                        tempModel.setDisposalMethod(block.getDisposalMethod());
+                        tempModel.setDelayTime(block.getDelayTime());
+                        tempModel.setData(GifDecoder.decodeImageBlock(GifDrawable.this, block));
+                        handler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                invalidateSelf();
+                            }
+                        });
+                        decodeThread = null;
+                    }
+                });
+                decodeThread.start();
+            }
+        } else {
+            if (pic_list.size() == 0) {
+                if (!isReadFinished) {
+                    handler.postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            invalidateSelf();
+                        }
+                    }, 160);
+                }
+                return;
+            }
+            if (lastBitmap == null) {
+                lastBitmap = Bitmap.createBitmap(logicalWidth, logicalHeight, Bitmap.Config.ARGB_8888);
+                saveCanvas = new Canvas(lastBitmap);
+            }
+            canvas.drawBitmap(lastBitmap, 0, 0, mPaint);
+            currentIndex++;
+            if (currentIndex >= pic_list.size()) {
+                if (isReadFinished) {
+                    currentIndex = 0;
+                } else {
+                    currentIndex = (short) (pic_list.size() - 1);
+                }
+            }
 
-        GifImagePixelModel model = pic_list.get(currentIndex);
-        drawGif(canvas, model);
-        handler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                invalidateSelf();
-            }
-        }, model.getDelayTime());
+            GifImagePixelModel model = pic_list.get(currentIndex);
+            drawGif(canvas, model);
+            handler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    invalidateSelf();
+                }
+            }, model.getDelayTime());
+        }
     }
 
     private void drawGif(Canvas canvas, GifImagePixelModel model) {
         int width = model.getWidth();
         int height = model.getHeight();
+        if (width <= 0 || height <= 0) {
+            return;
+        }
         String key = String.format(Locale.getDefault(), "%d*%d", width, height);
         Bitmap bitmap = cache.get(key);
         if (bitmap == null) {

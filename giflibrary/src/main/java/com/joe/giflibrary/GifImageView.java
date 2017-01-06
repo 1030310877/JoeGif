@@ -6,8 +6,6 @@ import android.support.annotation.DrawableRes;
 import android.util.AttributeSet;
 import android.widget.ImageView;
 
-import com.joe.giflibrary.model.GifDrawable;
-
 import java.io.IOException;
 import java.io.InputStream;
 

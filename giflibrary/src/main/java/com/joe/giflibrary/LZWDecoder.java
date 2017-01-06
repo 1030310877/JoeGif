@@ -77,7 +77,7 @@ class LZWDecoder {
         for (Word word : result) {
             for (Short aShort : word.codes) {
                 int colorInt;
-                if (GifDecoder.transparentColorIndex == aShort) {
+                if (block.getTransparentColorIndex() == aShort) {
                     colorInt = 0;
                 } else {
                     colorInt = block.getColor_table()[aShort];

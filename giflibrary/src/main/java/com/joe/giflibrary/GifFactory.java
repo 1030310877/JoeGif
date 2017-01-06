@@ -2,8 +2,6 @@ package com.joe.giflibrary;
 
 import android.util.Log;
 
-import com.joe.giflibrary.model.GifDrawable;
-
 import java.io.IOException;
 import java.io.InputStream;
 

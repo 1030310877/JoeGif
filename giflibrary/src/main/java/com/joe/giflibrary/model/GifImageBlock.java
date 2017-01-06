@@ -22,6 +22,9 @@ public class GifImageBlock {
     private int[] color_table;
     private byte LZWSize;
     private ArrayList<byte[]> imageEncodeData;
+    private byte disposalMethod;
+    private short transparentColorIndex;
+    private short delayTime;
 
     public GifImageBlock() {
         header = FLAG_IMAGE_BLOCK;
@@ -139,10 +142,35 @@ public class GifImageBlock {
         return LZWSize;
     }
 
+    public void setDisposalMethod(byte disposalMethod) {
+        this.disposalMethod = disposalMethod;
+    }
+
+    public byte getDisposalMethod() {
+        return disposalMethod;
+    }
+
+    public void setTransparentColorIndex(short transparentColorIndex) {
+        this.transparentColorIndex = transparentColorIndex;
+    }
+
+    public short getTransparentColorIndex() {
+        return transparentColorIndex;
+    }
+
+    public void setDelayTime(short delayTime) {
+        this.delayTime = delayTime;
+    }
+
+    public short getDelayTime() {
+        return delayTime;
+    }
+
     @Override
     public String toString() {
         return String.format(Locale.getDefault(),
                 "Width=%d,Height=%d,OffsetX=%d,OffsetY=%d,InterlaceFlag=%b,SortFlag=%b",
                 imageWidth, imageHeight, offsetX, offsetY, interlaceFlag, localSortFlag);
     }
+
 }
